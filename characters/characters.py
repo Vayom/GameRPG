@@ -19,10 +19,13 @@ class Character:
         3) attack - количество урона, наносимое персонажем
     '''
 
-    def __init__(self, name, hp, attack):
+    def __init__(self, name, hp, attack, speed, crit_chance, crit_damage, avoid_chance):
         self.name = name
         self.hp = hp
         self.attack = attack
+        self.crit_chance = crit_chance
+        self.crit_damage = crit_damage
+        self.avoid_chance = avoid_chance
 
     # Получение урона
     def take_damage(self, damage):
@@ -82,13 +85,26 @@ class Player(Character):
     Методы:
         1) show_inventory - показ всех вещей в инвентаре
     '''
+
     def __init__(self, name):
-        super().__init__(name, attack=10, hp=100)
+        super().__init__(name, attack=10, hp=100, speed=10, crit_chance=0, crit_damage=100, avoid_chance=0)
         self.inventory = []
+        self.static_items = {'first_weapon': None,
+                             'helmet': None,
+                             'bib': None,
+                             'pants': None,
+                             'boots': None,
+                             'ring_1': None,
+                             'ring_2': None,
+                             'accessories': None,
+                             'pet': None}
 
     def show_inventory(self):
         for item in self.inventory:
             print(item)
+
+    def put_on(self, item):
+        pass
 
 
 class EnemyCharacter(Character):
@@ -99,8 +115,9 @@ class EnemyCharacter(Character):
     Методы:
         1) give_drop - метод, который случайным образом выдаёт или не выдает предметы игроку
     '''
+
     def __init__(self, name, hp, attack):
-        super().__init__(name, hp, attack)
+        super().__init__(name, attack=10, hp=100, speed=10, crit_chance=0, crit_damage=100, avoid_chance=0)
         self.drop = {'Меч': 50, 'Золотой шлем': 20}
 
     def give_drop(self, player):
