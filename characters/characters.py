@@ -71,7 +71,7 @@ class Character:
     # Нанесение урона
     def attack_enemy(self, enemy):
         parrying_chance = 0.5 if enemy.block_status else 0
-        parrying_chance = 0.5 + (0.5 * enemy.avoid_chance / 100) if parrying_chance == 0.5 else enemy.avoid_chance / 100
+        parrying_chance = 0.5 + (0.5 * enemy.avoid_chance) if parrying_chance == 0.5 else enemy.avoid_chance / 100
         rand_attack = round(random(), 2)
         print(f'Шанс парирования у {enemy.name} = {parrying_chance}')
         attacking = True if rand_attack > parrying_chance else False
@@ -123,7 +123,7 @@ class Character:
         first_move_end = False
         result = 0
         while self.hp > 0 and enemy_char.hp > 0:
-            if player_first or not first_move_end:
+            if player_first or first_move_end:
                 choice_action = int(input('Выберите действие\n1) Атаковать\n2) Защититься\n3) Сбежать\n'))
                 if choice_action == 1:
                     self.attack_enemy(enemy_char)
@@ -154,9 +154,9 @@ class Player(Character):
         1) show_inventory - показ всех вещей в инвентаре
     '''
 
-    def __init__(self, name, hp, level, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+    def __init__(self, name, level, hp, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
                  block_status):
-        super().__init__(name, hp, level, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+        super().__init__(name, level, hp, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
                          block_status)
         self.inventory = []
         self.static_items = {'first_weapon': None,
