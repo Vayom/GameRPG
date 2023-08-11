@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, choice, random
 
 
 class Character:
@@ -8,37 +8,79 @@ class Character:
 
     Методы:
         1) take_damage - получение урона персонажем
-        2) attack_enemy - нанесение урона персонажем
-        3) death - метод проверки на смерть
-        4) start_fight - интерфейс начала боя между персонажами
-        5) fight - основной метод проведения боя
+        2) set_block - установка статуса блокирования следующей атаки
+        3) escape - попытка сбежать с поля боя
+        4) attack_enemy - нанесение урона персонажем
+        5) death - метод проверки на смерть
+        6) start_fight - интерфейс начала боя между персонажами
+        7) fight - основной метод проведения боя
 
     Параметры:
         1) name - имя персонажа
-        2) hp - Health Point (очки здоровья)
-        3) attack - количество урона, наносимое персонажем
-        4) speed - скорость (нужна для определения стороны для первого удара)
-        5) crit_chance - шанс нанести крит. урон (в процентах от 0 до 100)
-        6) crit_damage - урон, наносимый при срабатывании крита (в процентах от базовой атаки)
-        7) avoid_chance - шанс парировать атаку соперника (в процентах)
+        2) level - уровень персонажа
+        3) hp - текущие Health Point (очки здоровья)
+        4) max_hp - максимальное кол-во Health Point
+        5) attack - количество урона, наносимое персонажем
+        6) protection - броня
+        7) speed - скорость (нужна для определения стороны для первого удара)
+        8) crit_chance - шанс нанести крит. урон (в процентах от 0 до 100)
+        9) crit_damage - урон, наносимый при срабатывании крита (в процентах от базовой атаки)
+        10) avoid_chance - шанс парировать атаку соперника (в процентах)
+        11) block_status - статус блокирования атаки
     '''
 
-    def __init__(self, name, hp, attack, speed, crit_chance, crit_damage, avoid_chance):
+    def __init__(self, name, level, hp, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+                 block_status):
         self.name = name
+        self.level = level
         self.hp = hp
+        self.max_hp = max_hp
         self.attack = attack
+        self.protection = protection
         self.speed = speed
         self.crit_chance = crit_chance
         self.crit_damage = crit_damage
         self.avoid_chance = avoid_chance
+        self.block_status = block_status
 
     # Получение урона
     def take_damage(self, damage):
-        self.hp -= damage
+        self.hp -= damage - self.protection
+
+    # Установка статуса блокирования
+    def set_block(self):
+        self.block_status = True
+        print(f'{self.name} ставит блок')
+
+    # Функция побега с поля боя
+    def escape(self, enemy):
+        diff_levels = enemy.level - self.level
+        if diff_levels <= 0:
+            escape_chance = 0.3
+        elif diff_levels < 5:
+            escape_chance = 0.1
+        else:
+            escape_chance = 0.05
+        escaping = True if round(random(), 2) <= escape_chance else False
+        if escaping:
+            print('Получилось сбежать')
+        else:
+            print('Побег не удался')
+        return escaping
 
     # Нанесение урона
     def attack_enemy(self, enemy):
-        enemy.take_damage(self.attack)
+        parrying_chance = 0.5 if enemy.block_status else 0
+        parrying_chance = 0.5 + (0.5 * enemy.avoid_chance / 100) if parrying_chance == 0.5 else enemy.avoid_chance / 100
+        rand_attack = round(random(), 2)
+        print(f'Шанс парирования у {enemy.name} = {parrying_chance}')
+        attacking = True if rand_attack > parrying_chance else False
+        if attacking:
+            enemy.take_damage(self.attack)
+
+            print(f'{self.name} нанёс {self.attack - enemy.protection} по {enemy.name}')
+        else:
+            print(f'{enemy.name} парировал атаку')
 
     # Проверка на смерть
     def death(self):
@@ -54,32 +96,53 @@ class Character:
 
         '''
         print('Бой начался')
-        rand_num_player = randint(1, 10)
-        rand_num_enemy = randint(1, 10)
-        print(f'Ваше число - {rand_num_player}\nЧисло врага - {rand_num_enemy}')
         # Основной метод проведения боя вызывается от игрока, если у него не меньше очков, чем у врага
-        if rand_num_player >= rand_num_enemy:
+        if self.speed >= enemy_char.speed:
             print('Вы ходите первыми')
-            self.fight(enemy_char)
+            first_move = True
         else:
-            print('Сначала бьёт враг')
-            enemy_char.fight(self)
+            print(f'Сначала ходит {enemy_char.name}')
+            first_move = False
+        result = self.fight(enemy_char, first_move)
+        if result == 'Win':
+            print('Победа')
+            enemy_char.give_drop(self)
+        elif result == 'Lose':
+            print('Умер лох(')
+            exit()
         # Проверка на конечный результат
-        if not self.death():
-            print('Победа!')
-        else:
-            print('Умер(')
 
-    def fight(self, enemy_char):
+    def fight(self, enemy_char, player_first):
+        '''
+        Описание
+            Основной метод боя, игрок способен выбрать действие, противник - нет.
+            Первый ход определяет переменная player_first
+            Бой длится до тех пор, пока игрок не сбежит или какая-то из сторон не погибнет
+        '''
+        actions = ['Атаковать', 'Защищаться']
+        first_move_end = False
+        result = 0
         while self.hp > 0 and enemy_char.hp > 0:
-            enemy_char.take_damage(self.attack)
-            print(f'{self.name} наносит {self.attack} урона по {enemy_char.name}')
-            if enemy_char.death():
-                break
-            self.take_damage(enemy_char.attack)
-            print(f'{enemy_char.name} наносит {enemy_char.attack} урона по {self.name}')
-            if self.death():
-                break
+            if player_first or not first_move_end:
+                choice_action = int(input('Выберите действие\n1) Атаковать\n2) Защититься\n3) Сбежать\n'))
+                if choice_action == 1:
+                    self.attack_enemy(enemy_char)
+                elif choice_action == 2:
+                    self.set_block()
+                elif choice_action == 3:
+                    escaping = self.escape(enemy_char)
+                    if escaping:
+                        return 'escaped'
+            enemy_action = choice(actions)
+            enemy_char.block_status = False
+            if enemy_action == 'Атаковать':
+                enemy_char.attack_enemy(self)
+            else:
+                enemy_char.set_block()
+            self.block_status = False
+            first_move_end = True
+        result = 'Win' if self.hp > 0 else 'Lose'
+        return result
 
 
 class Player(Character):
@@ -91,8 +154,10 @@ class Player(Character):
         1) show_inventory - показ всех вещей в инвентаре
     '''
 
-    def __init__(self, name):
-        super().__init__(name, attack=10, hp=100, speed=10, crit_chance=0, crit_damage=100, avoid_chance=0)
+    def __init__(self, name, hp, level, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+                 block_status):
+        super().__init__(name, hp, level, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+                         block_status)
         self.inventory = []
         self.static_items = {'first_weapon': None,
                              'helmet': None,
@@ -121,13 +186,15 @@ class EnemyCharacter(Character):
         1) give_drop - метод, который случайным образом выдаёт или не выдает предметы игроку
     '''
 
-    def __init__(self, name, hp, attack):
-        super().__init__(name, attack=10, hp=100, speed=10, crit_chance=0, crit_damage=100, avoid_chance=0)
-        self.drop = {'Меч': 50, 'Золотой шлем': 20}
+    def __init__(self, name, level, hp, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+                 block_status):
+        super().__init__(name, level, hp, max_hp, attack, protection, speed, crit_chance, crit_damage, avoid_chance,
+                         block_status)
+        self.drop = {'Меч': 0.5, 'Золотой шлем': 0.2}
 
     def give_drop(self, player):
         for item, chance in self.drop.items():
-            get_chance = randint(1, 101)
+            get_chance = round(random(), 2)
             if get_chance <= chance:
                 player.inventory.append(item)
                 print(f'Добавлен предмет {item}')
